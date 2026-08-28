@@ -12,7 +12,7 @@ if not os.path.exists(DOWNLOAD_DIR):
 
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
-    bot.reply_to(message, "أهلاً بك يا أبو إياد! 🎥🎵\nأرسل لي أي رابط (تيك توك، يوتيوب، إلخ) وسأقوم بتحميله فوراً.")
+    bot.reply_to(message, "أهلاً بك ! 🎵\nأرسل لي أي رابط وسأقوم بتحميله مع زر استخراج الصوت.")
 
 @bot.message_handler(func=lambda message: True)
 def handle_link(message):
@@ -22,7 +22,6 @@ def handle_link(message):
     url = message.text.strip()
     sent_msg = bot.reply_to(message, "⏳ جاري فحص الرابط وتحميل الفيديو...")
 
-    # إعدادات متقدمة لـ yt-dlp لتجاوز قيود الروابط المختصرة مثل تيك توك
     ydl_opts = {
         'format': 'best[ext=mp4]/best',
         'outtmpl': os.path.join(DOWNLOAD_DIR, '%(id)s.%(ext)s'),
@@ -39,12 +38,11 @@ def handle_link(message):
             info = ydl.extract_info(url, download=True)
             file_path = ydl.prepare_filename(info)
             video_id = info.get('id', 'video')
-
+            
+            # إنشاء زر واحد فقط لتحميل الصوت
             markup = InlineKeyboardMarkup()
-            markup.row_width = 1
             markup.add(
-                InlineKeyboardButton("تحميل كملف صوتي (MP3)", callback_data=f"audio_{video_id}"),
-                InlineKeyboardButton("تحميل بأعلى دقة HD", callback_data=f"hd_{video_id}")
+                InlineKeyboardButton("🎵 تحميل كملف صوتي (MP3)", callback_data=f"audio_{video_id}")
             )
 
             if file_path and os.path.exists(file_path):
@@ -52,7 +50,7 @@ def handle_link(message):
                     bot.send_video(
                         message.chat.id, 
                         video, 
-                        caption="🎬 تم التحميل بنجاح بواسطة بوت أبو إياد", 
+                        caption="🎬 تم التحميل بنجاح ", 
                         reply_markup=markup
                     )
             else:
@@ -74,12 +72,12 @@ def handle_link(message):
             except:
                 pass
 
+# معالجة الضغط على زر الصوت الوحيد
 @bot.callback_query_handler(func=lambda call: True)
 def callback_query(call):
     if call.data.startswith("audio_"):
-        bot.answer_callback_query(call.id, "🎵 تم استلام طلب الصوت بنجاح")
-    elif call.data.startswith("hd_"):
-        bot.answer_callback_query(call.id, "🌟 تم استلام طلب الجودة العالية بنجاح")
+        bot.answer_callback_query(call.id, "🎵 جارٍ تجهيز الملف الصوتي...")
+        bot.send_message(call.message.chat.id, "🎧 تم استلام طلبك لتحويل الفيديو إلى ملف صوتي.")
 
 print("Bot is running smoothly...")
 bot.infinity_polling(timeout=60, long_polling_timeout=60)
