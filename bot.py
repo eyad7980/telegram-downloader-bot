@@ -33,8 +33,9 @@ def handle_link(message):
 
     url = expand_url(raw_url)
 
+    # التعديل هنا ليشمل دعم يوتيوب وباقي المنصات بدون مشاكل دمج
     ydl_opts = {
-        'format': 'best',
+        'format': 'best[height<=720]/best[ext=mp4]/best',
         'outtmpl': os.path.join(DOWNLOAD_DIR, '%(id)s.%(ext)s'),
         'restrictfilenames': True,
         'noplaylist': True,
