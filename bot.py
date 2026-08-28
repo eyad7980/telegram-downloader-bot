@@ -26,7 +26,6 @@ async def handle_url(update: Update, context: ContextTypes.DEFAULT_TYPE):
     status_msg = await update.message.reply_text("⏳ جاري التحميل...")
     output_file = f"video_{update.effective_user.id}.mp4"
     
-    # Build headers dynamically based on the target site to improve compatibility
     headers = {
         'Accept-Language': 'en-US,en;q=0.9',
     }
@@ -35,24 +34,25 @@ async def handle_url(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif 'tiktok.com' in url:
         headers['Referer'] = 'https://www.tiktok.com/'
 
-    # yt-dlp options tuned to bypass common blocks and use Android player_client for YouTube
-        ydl_opts = {
+    ydl_opts = {
         'format': 'best',
         'outtmpl': output_file,
         'quiet': True,
         'no_warnings': True,
         'geo_bypass': True,
+        'nocheckcertificate': True,
         'extractor_args': {
             'youtube': {
-                'player_client': ['android', 'web']
+                'player_client': ['android', 'mweb', 'web']
             }
         },
         'http_headers': {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
             'Accept-Language': 'en-US,en;q=0.5',
             'Sec-Fetch-Mode': 'navigate',
         }
+    }
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
