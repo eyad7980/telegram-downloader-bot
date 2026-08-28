@@ -6,12 +6,13 @@ import yt_dlp
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
-BOT_TOKEN = "8812016147:AAE3ZN9ALpAlXLgCc398224pqvDcaviAU2Q"
+# جلب التتوكن مباشرة من متغيرات Railway أوضعه هنا صراحة للتأكد
+BOT_TOKEN = os.getenv("BOT_TOKEN", "8812016147:AAE3ZN9ALpAlXLgCc398224pqvDcaviAU2Q")
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "أهلاً بك يا أبو إياد! 🎥🎵\n"
-        "أرسل لي أي رابط (تيك توك أو غيره) وسأعطيك خيار التحميل كـ فيديو أو صوت."
+        "أرسل لي أي رابط وسأعطيك خيار التحميل كـ فيديو أو صوت."
     )
 
 async def handle_url(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -122,4 +123,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
