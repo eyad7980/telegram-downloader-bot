@@ -12,7 +12,7 @@ if not os.path.exists(DOWNLOAD_DIR):
 
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
-    bot.reply_to(message, "أهلاً بك ! 🎵\nأرسل لي أي رابط وسأقوم بتحميله مع زر استخراج الصوت.")
+    bot.reply_to(message, "أهلاً بك! 🎵\nأرسل لي أي رابط وسأقوم بتحميله لك.")
 
 @bot.message_handler(func=lambda message: True)
 def handle_link(message):
@@ -39,7 +39,7 @@ def handle_link(message):
             file_path = ydl.prepare_filename(info)
             video_id = info.get('id', 'video')
             
-            # إنشاء زر واحد فقط لتحميل الصوت
+            # زر واحد فقط لتحميل الصوت بدون زر الـ HD
             markup = InlineKeyboardMarkup()
             markup.add(
                 InlineKeyboardButton("🎵 تحميل كملف صوتي (MP3)", callback_data=f"audio_{video_id}")
@@ -50,7 +50,7 @@ def handle_link(message):
                     bot.send_video(
                         message.chat.id, 
                         video, 
-                        caption="🎬 تم التحميل بنجاح ", 
+                        caption="🎬 تم التحميل بنجاح", 
                         reply_markup=markup
                     )
             else:
@@ -72,7 +72,6 @@ def handle_link(message):
             except:
                 pass
 
-# معالجة الضغط على زر الصوت الوحيد
 @bot.callback_query_handler(func=lambda call: True)
 def callback_query(call):
     if call.data.startswith("audio_"):
