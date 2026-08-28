@@ -10,6 +10,18 @@ DOWNLOAD_DIR = 'downloads'
 if not os.path.exists(DOWNLOAD_DIR):
     os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 
+# خيارات yt-dlp المتطورة لتجاوز حجب تيك توك والسيرفرات
+YDL_OPTIONS = {
+    'format': 'best[ext=mp4]/best',
+    'outtmpl': os.path.join(DOWNLOAD_DIR, '%(id)s.%(ext)s'),
+    'restrictfilenames': True,
+    'noplaylist': True,
+    'quiet': True,
+    'no_warnings': True,
+    'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+    'referer': 'https://www.tiktok.com/',
+}
+
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
     bot.reply_to(message, "أهلاً بك! 🎵\nأرسل لي أي رابط وسأقوم بتحميله لك.")
@@ -22,24 +34,14 @@ def handle_link(message):
     url = message.text.strip()
     sent_msg = bot.reply_to(message, "⏳ جاري فحص الرابط وتحميل الفيديو...")
 
-    ydl_opts = {
-        'format': 'best[ext=mp4]/best',
-        'outtmpl': os.path.join(DOWNLOAD_DIR, '%(id)s.%(ext)s'),
-        'restrictfilenames': True,
-        'noplaylist': True,
-        'http_headers': {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        },
-    }
-
     file_path = None
     try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        with yt_dlp.YoutubeDL(YDL_OPTIONS) as ydl:
             info = ydl.extract_info(url, download=True)
             file_path = ydl.prepare_filename(info)
             video_id = info.get('id', 'video')
-            
-            # زر واحد فقط لتحميل الصوت بدون زر الـ HD
+
+            # زر واحد فقط لتحميل الصوت MP3
             markup = InlineKeyboardMarkup()
             markup.add(
                 InlineKeyboardButton("🎵 تحميل كملف صوتي (MP3)", callback_data=f"audio_{video_id}")
@@ -61,7 +63,7 @@ def handle_link(message):
     except Exception as e:
         print(f"Download Error: {str(e)}")
         try:
-            bot.edit_message_text(f"❌ حدث خطأ أثناء التحميل. تأكد أن الرابط عام وغير مشفر.", message.chat.id, sent_msg.message_id)
+            bot.edit_message_text("❌ حدث خطأ أثناء التحميل. يرجى التأكد من الرابط ومحاولة إرساله مرة أخرى.", message.chat.id, sent_msg.message_id)
         except:
             bot.reply_to(message, "❌ حدث خطأ غير متوقع أثناء المعالجة.")
 
@@ -72,10 +74,11 @@ def handle_link(message):
             except:
                 pass
 
+# معالجة زر تحميل الصوت
 @bot.callback_query_handler(func=lambda call: True)
 def callback_query(call):
     if call.data.startswith("audio_"):
-        bot.answer_callback_query(call.id, "🎵 جارٍ تجهيز الملف الصوتي...")
+        bot.answer_callback_query(call.id, "🎵 جارٍ استخراج الملف الصوتي...")
         bot.send_message(call.message.chat.id, "🎧 تم استلام طلبك لتحويل الفيديو إلى ملف صوتي.")
 
 print("Bot is running smoothly...")
