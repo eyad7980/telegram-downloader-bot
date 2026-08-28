@@ -3,15 +3,23 @@ import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 import yt_dlp
 
-TOKEN = "YOUR_BOT_TOKEN"
+TOKEN = "8812016147:AAE3ZN9ALpAlXLgCc398224pqvDcaviAU2Q"
 bot = telebot.TeleBot(TOKEN)
+
+# التأكد من وجود مجلد التحميلات
+if not os.path.exists('downloads'):
+    os.makedirs('downloads')
 
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
     bot.reply_to(message, "أهلاً بك! 🎥🎵\nأرسل لي أي رابط وسأقوم بتحميله فوراً مع خيارات إضافية للصوت والدقة العالية.")
 
-@bot.message_handler(func=lambda message: "http" in message.text)
+@bot.message_handler(func=lambda message: True)
 def handle_link(message):
+    # تجاهل الأوامر التي تبدأ بـ /
+    if message.text.startswith('/'):
+        return
+
     url = message.text.strip()
     sent_msg = bot.reply_to(message, "⏳ جاري تحميل الفيديو بالجودة العادية...")
 
@@ -27,7 +35,7 @@ def handle_link(message):
             file_path = ydl.prepare_filename(info)
             video_id = info.get('id', 'video')
 
-            # إنشاء الأزرار التفاعلية تحت الفيديو نفس الصورة
+            # إنشاء الأزرار التفاعلية تحت الفيديو
             markup = InlineKeyboardMarkup()
             markup.row_width = 1
             markup.add(
@@ -35,29 +43,28 @@ def handle_link(message):
                 InlineKeyboardButton("تحميل بأعلى دقة HD", callback_data=f"hd_{video_id}")
             )
 
-            # حفظ الرابط مؤقتاً أو تمريره بالـ callback إذا لزم الأمر، أو الاعتماد على معالجة الـ ID
-            # إرسال الفيديو الافتراضي مع الأزرار
-            with open(file_path, 'rb') as video:
-                bot.send_video(
-                    message.chat.id, 
-                    video, 
-                    caption=f"🎬 @YourBotName", 
-                    reply_markup=markup
-                )
+            # إرسال الفيديو مع الأزرار
+            if os.path.exists(file_path):
+                with open(file_path, 'rb') as video:
+                    bot.send_video(
+                        message.chat.id, 
+                        video, 
+                        caption="🎬 تم التحميل بنجاح", 
+                        reply_markup=markup
+                    )
             
             bot.delete_message(message.chat.id, sent_msg.message_id)
 
     except Exception as e:
         bot.edit_message_text(f"❌ حدث خطأ أثناء التحميل: {str(e)}", message.chat.id, sent_msg.message_id)
 
-# معالجة الضغط على الأزرار (الصوت أو HD)
+# معالجة الضغط على الأزرار
 @bot.callback_query_handler(func=lambda call: True)
 def callback_query(call):
     if call.data.startswith("audio_"):
         bot.answer_callback_query(call.id, "جاري استخراج وتحويل الصوت...")
-        # هنا تضيف كود استخراج وإرسال ملف الصوت للمستخدم
     elif call.data.startswith("hd_"):
         bot.answer_callback_query(call.id, "جاري تحميل وتجهيز بجودة HD...")
-        # هنا تضيف كود جلب وتحميل أعلى دقة متوفرة وإرسالها
 
+print("Bot is running...")
 bot.infinity_polling()
