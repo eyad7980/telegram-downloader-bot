@@ -2,6 +2,7 @@ import os
 import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 import yt_dlp
+import requests
 
 TOKEN = "8812016147:AAE3ZN9ALpAlXLgCc398224pqvDcaviAU2Q"
 bot = telebot.TeleBot(TOKEN)
@@ -14,21 +15,32 @@ if not os.path.exists(DOWNLOAD_DIR):
 def send_welcome(message):
     bot.reply_to(message, "أهلاً بك! 🎵\nأرسل لي أي رابط وسأقوم بتحميله لك.")
 
+# دالة لتوسيع الروابط القصيرة مثل تيك توك لتجنب خطأ الحظر
+def expand_url(url):
+    try:
+        if "vt.tiktok.com" in url or "vm.tiktok.com" in url:
+            response = requests.head(url, allow_redirects=True, timeout=10)
+            return response.url
+    except Exception:
+        pass
+    return url
+
 @bot.message_handler(func=lambda message: True)
 def handle_link(message):
     if message.text.startswith('/'):
         return
 
-    url = message.text.strip()
+    raw_url = message.text.strip()
     sent_msg = bot.reply_to(message, "⏳ جاري فحص الرابط وتحميل الفيديو...")
 
-    # إعدادات أساسية ونظيفة مع تفعيل تجاوز الحبيبات الجغرافية
+    # توسيع الرابط القصير أولاً
+    url = expand_url(raw_url)
+
     ydl_opts = {
         'format': 'best',
         'outtmpl': os.path.join(DOWNLOAD_DIR, '%(id)s.%(ext)s'),
         'restrictfilenames': True,
         'noplaylist': True,
-        'extractor_args': {'tiktok': {'app_info': '7.0.0'}},
     }
 
     file_path = None
