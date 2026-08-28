@@ -22,19 +22,13 @@ def handle_link(message):
     url = message.text.strip()
     sent_msg = bot.reply_to(message, "⏳ جاري فحص الرابط وتحميل الفيديو...")
 
-    # خيارات مخصصة لتجاوز الحظر عبر محاكاة متصفح جوال كامل
+    # إعدادات أساسية ونظيفة مع تفعيل تجاوز الحبيبات الجغرافية
     ydl_opts = {
         'format': 'best',
         'outtmpl': os.path.join(DOWNLOAD_DIR, '%(id)s.%(ext)s'),
         'restrictfilenames': True,
         'noplaylist': True,
-        'geo_bypass': True,
-        'nocheckcertificate': True,
-        'http_headers': {
-            'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_2_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-            'Accept-Language': 'en-US,en;q=0.5',
-        },
+        'extractor_args': {'tiktok': {'app_info': '7.0.0'}},
     }
 
     file_path = None
@@ -44,7 +38,6 @@ def handle_link(message):
             file_path = ydl.prepare_filename(info)
             video_id = info.get('id', 'video')
 
-            # زر واحد لتحميل الصوت فقط
             markup = InlineKeyboardMarkup()
             markup.add(
                 InlineKeyboardButton("🎵 تحميل كملف صوتي (MP3)", callback_data=f"audio_{video_id}")
