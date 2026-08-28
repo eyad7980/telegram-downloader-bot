@@ -6,7 +6,6 @@ import yt_dlp
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
-# جلب التتوكن مباشرة من متغيرات Railway أوضعه هنا صراحة للتأكد
 BOT_TOKEN = os.getenv("BOT_TOKEN", "8812016147:AAE3ZN9ALpAlXLgCc398224pqvDcaviAU2Q")
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
