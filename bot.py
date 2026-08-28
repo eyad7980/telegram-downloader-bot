@@ -8,13 +8,10 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 
 BOT_TOKEN = "8812016147:AAE3ZN9ALpAlXLgCc398224pqvDcaviAU2Q"
 
-# رابط الإعلان الخاص بك للربح (يمكنك استبداله برابط موقعك، أو رابط إحالة، أو رابط مختصر ربحي)
-ADS_LINK = "https://example.com/your-ad-or-affiliate-link"
-
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "أهلاً بك يا أبو إياد! 🎥🎵\n"
-        "أرسل لي أي رابط فيديو وسأجعلك تختار بين تحميله **كفيديو** أو **صوت**، مع خيارات الإعلانات والأرباح."
+        "أرسل لي أي رابط (تيك توك أو غيره) وسأعطيك خيار التحميل كـ فيديو أو صوت."
     )
 
 async def handle_url(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -29,23 +26,18 @@ async def handle_url(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not url:
         return
 
-    # حفظ الرابط مؤقتاً في سياق المستخدم لنستخدمه عند الضغط على الأزرار
     context.user_data['target_url'] = url
 
-    # إنشاء الأزرار التفاعلية (فيديو، صوت، وإعلان للربح)
     keyboard = [
         [
             InlineKeyboardButton("🎥 تحميل فيديو (MP4)", callback_data="dl_video"),
             InlineKeyboardButton("🎵 تحميل صوت (MP3)", callback_data="dl_audio")
-        ],
-        [
-            InlineKeyboardButton("📢 زيارة راعي البوت (إعلان / ربح)", url=ADS_LINK)
         ]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     await update.message.reply_text(
-        "تم استلام الرابط بنجاح! 📥\nاختر ماذا تريد أن أفعل بالمقطع:",
+        "تم استلام الرابط بنجاح! 📥\nاختر صيغة التحميل المطلوبة:",
         reply_markup=reply_markup
     )
 
@@ -61,8 +53,14 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     action = query.data
     user_id = update.effective_user.id
     
+    headers = {'Accept-Language': 'en-US,en;q=0.9'}
+    if 'tiktok.com' in url:
+        headers['Referer'] = 'https://www.tiktok.com/'
+    elif 'youtube.com' in url or 'youtu.be' in url:
+        headers['Referer'] = 'https://www.youtube.com/'
+
     if action == "dl_video":
-        status_msg = await query.edit_message_text("⏳ جاري تجهيز وتحميل الفيديو...")
+        status_msg = await query.edit_message_text("⏳ جاري تحميل الفيديو...")
         output_file = f"video_{user_id}.mp4"
         ydl_opts = {
             'format': 'best',
@@ -71,6 +69,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             'no_warnings': True,
             'geo_bypass': True,
             'nocheckcertificate': True,
+            'http_headers': headers
         }
         try:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -88,32 +87,23 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await status_msg.edit_text(f"❌ حدث خطأ أثناء تحميل الفيديو: {str(e)}")
 
     elif action == "dl_audio":
-        status_msg = await query.edit_message_text("⏳ جاري استخراج وتحميل الصوتي (MP3)...")
+        status_msg = await query.edit_message_text("⏳ جاري استخراج الصوت...")
         output_file = f"audio_{user_id}.mp3"
         ydl_opts = {
             'format': 'bestaudio/best',
-            'outtmpl': output_file.replace('.mp3', ''),
-            'postprocessors': [{
-                'key': 'FFmpegExtractAudio',
-                'preferredcodec': 'mp3',
-                'preferredquality': '192',
-            }],
+            'outtmpl': output_file,
             'quiet': True,
             'no_warnings': True,
             'geo_bypass': True,
             'nocheckcertificate': True,
+            'http_headers': headers
         }
         try:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 ydl.download([url])
 
-            # التأكد من امتداد الملف الناتج
-            final_audio_path = output_file
-            if not os.path.exists(final_audio_path) and os.path.exists(output_file.replace('.mp3', '.m4a')):
-                final_audio_path = output_file.replace('.mp3', '.m4a')
-
             if os.path.exists(output_file):
-                await status_msg.edit_text("📤 جاري إرسال الملف الصوتي...")
+                await status_msg.edit_text("📤 جاري إرسال الصوتي...")
                 with open(output_file, 'rb') as af:
                     await query.message.reply_audio(audio=af)
                 await status_msg.delete()
@@ -132,3 +122,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
