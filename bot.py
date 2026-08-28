@@ -1,0 +1,59 @@
+import os
+import logging
+from telegram import Update
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
+import yt_dlp
+
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+
+BOT_TOKEN = "8812016147:AAE3ZN9ALpAlXLgCc398224pqvDcaviAU2Q"
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("أهلاً بك! 🎥 أرسل لي أي رابط فيديو وسأقوم بتحميله لك.")
+
+async def handle_url(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = update.message.text.strip()
+    
+    url = None
+    for word in text.split():
+        if word.startswith("http://") or word.startswith("https://"):
+            url = word
+            break
+            
+    if not url:
+        return
+
+    status_msg = await update.message.reply_text("⏳ جاري التحميل...")
+    output_file = f"video_{update.effective_user.id}.mp4"
+    
+    ydl_opts = {
+        'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+        'outtmpl': output_file,
+        'quiet': True,
+        'no_warnings': True,
+        'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    }
+
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            ydl.download([url])
+
+        if os.path.exists(output_file):
+            await status_msg.edit_text("📤 جاري إرسال الفيديو...")
+            with open(output_file, 'rb') as vf:
+                await update.message.reply_video(video=vf)
+            await status_msg.delete()
+            os.remove(output_file)
+        else:
+            await status_msg.edit_text("❌ لم يتم العثور على الملف.")
+    except Exception as e:
+        await status_msg.edit_text(f"❌ حدث خطأ أثناء التحميل: {str(e)}")
+
+def main():
+    app = ApplicationBuilder().token(BOT_TOKEN).build()
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_url))
+    app.run_polling()
+
+if __name__ == '__main__':
+    main()
