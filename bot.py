@@ -1,124 +1,63 @@
 import os
-import logging
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes
+import telebot
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 import yt_dlp
 
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+TOKEN = "YOUR_BOT_TOKEN"
+bot = telebot.TeleBot(TOKEN)
 
-BOT_TOKEN = os.getenv("BOT_TOKEN", "8812016147:AAE3ZN9ALpAlXLgCc398224pqvDcaviAU2Q")
+@bot.message_handler(commands=['start'])
+def send_welcome(message):
+    bot.reply_to(message, "أهلاً بك! 🎥🎵\nأرسل لي أي رابط وسأقوم بتحميله فوراً مع خيارات إضافية للصوت والدقة العالية.")
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
-        "أهلاً بك! 🎥🎵\n"
-        "أرسل لي أي رابط وسأعطيك خيار التحميل كـ فيديو أو صوت."
-    )
+@bot.message_handler(func=lambda message: "http" in message.text)
+def handle_link(message):
+    url = message.text.strip()
+    sent_msg = bot.reply_to(message, "⏳ جاري تحميل الفيديو بالجودة العادية...")
 
-async def handle_url(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = update.message.text.strip()
-    
-    url = None
-    for word in text.split():
-        if word.startswith("http://") or word.startswith("https://"):
-            url = word
-            break
+    ydl_opts = {
+        'format': 'best[ext=mp4]/best',
+        'outtmpl': 'downloads/%(id)s.%(ext)s',
+        'restrictfilenames': True,
+    }
+
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=True)
+            file_path = ydl.prepare_filename(info)
+            video_id = info.get('id', 'video')
+
+            # إنشاء الأزرار التفاعلية تحت الفيديو نفس الصورة
+            markup = InlineKeyboardMarkup()
+            markup.row_width = 1
+            markup.add(
+                InlineKeyboardButton("تحميل كملف صوتي", callback_data=f"audio_{video_id}"),
+                InlineKeyboardButton("تحميل بأعلى دقة HD", callback_data=f"hd_{video_id}")
+            )
+
+            # حفظ الرابط مؤقتاً أو تمريره بالـ callback إذا لزم الأمر، أو الاعتماد على معالجة الـ ID
+            # إرسال الفيديو الافتراضي مع الأزرار
+            with open(file_path, 'rb') as video:
+                bot.send_video(
+                    message.chat.id, 
+                    video, 
+                    caption=f"🎬 @YourBotName", 
+                    reply_markup=markup
+                )
             
-    if not url:
-        return
+            bot.delete_message(message.chat.id, sent_msg.message_id)
 
-    context.user_data['target_url'] = url
+    except Exception as e:
+        bot.edit_message_text(f"❌ حدث خطأ أثناء التحميل: {str(e)}", message.chat.id, sent_msg.message_id)
 
-    keyboard = [
-        [
-            InlineKeyboardButton("🎥 تحميل فيديو (MP4)", callback_data="dl_video"),
-            InlineKeyboardButton("🎵 تحميل صوت (MP3)", callback_data="dl_audio")
-        ]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
+# معالجة الضغط على الأزرار (الصوت أو HD)
+@bot.callback_query_handler(func=lambda call: True)
+def callback_query(call):
+    if call.data.startswith("audio_"):
+        bot.answer_callback_query(call.id, "جاري استخراج وتحويل الصوت...")
+        # هنا تضيف كود استخراج وإرسال ملف الصوت للمستخدم
+    elif call.data.startswith("hd_"):
+        bot.answer_callback_query(call.id, "جاري تحميل وتجهيز بجودة HD...")
+        # هنا تضيف كود جلب وتحميل أعلى دقة متوفرة وإرسالها
 
-    await update.message.reply_text(
-        "تم استلام الرابط بنجاح! 📥\nاختر صيغة التحميل المطلوبة:",
-        reply_markup=reply_markup
-    )
-
-async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    
-    url = context.user_data.get('target_url')
-    if not url:
-        await query.edit_message_text("❌ انتهت صلاحية الرابط، الرجاء إرسال الرابط مجدداً.")
-        return
-
-    action = query.data
-    user_id = update.effective_user.id
-    
-    headers = {'Accept-Language': 'en-US,en;q=0.9'}
-    if 'tiktok.com' in url:
-        headers['Referer'] = 'https://www.tiktok.com/'
-    elif 'youtube.com' in url or 'youtu.be' in url:
-        headers['Referer'] = 'https://www.youtube.com/'
-
-    if action == "dl_video":
-        status_msg = await query.edit_message_text("⏳ جاري تحميل الفيديو...")
-        output_file = f"video_{user_id}.mp4"
-        ydl_opts = {
-            'format': 'best',
-            'outtmpl': output_file,
-            'quiet': True,
-            'no_warnings': True,
-            'geo_bypass': True,
-            'nocheckcertificate': True,
-            'http_headers': headers
-        }
-        try:
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                ydl.download([url])
-
-            if os.path.exists(output_file):
-                await status_msg.edit_text("📤 جاري إرسال الفيديو...")
-                with open(output_file, 'rb') as vf:
-                    await query.message.reply_video(video=vf)
-                await status_msg.delete()
-                os.remove(output_file)
-            else:
-                await status_msg.edit_text("❌ لم يتم العثور على ملف الفيديو.")
-        except Exception as e:
-            await status_msg.edit_text(f"❌ حدث خطأ أثناء تحميل الفيديو: {str(e)}")
-
-    elif action == "dl_audio":
-        status_msg = await query.edit_message_text("⏳ جاري استخراج الصوت...")
-        output_file = f"audio_{user_id}.mp3"
-        ydl_opts = {
-            'format': 'bestaudio/best',
-            'outtmpl': output_file,
-            'quiet': True,
-            'no_warnings': True,
-            'geo_bypass': True,
-            'nocheckcertificate': True,
-            'http_headers': headers
-        }
-        try:
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                ydl.download([url])
-
-            if os.path.exists(output_file):
-                await status_msg.edit_text("📤 جاري إرسال الصوتي...")
-                with open(output_file, 'rb') as af:
-                    await query.message.reply_audio(audio=af)
-                await status_msg.delete()
-                os.remove(output_file)
-            else:
-                await status_msg.edit_text("❌ لم يتم العثور على الملف الصوتي.")
-        except Exception as e:
-            await status_msg.edit_text(f"❌ حدث خطأ أثناء تحميل الصوت: {str(e)}")
-
-def main():
-    app = ApplicationBuilder().token(BOT_TOKEN).build()
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_url))
-    app.add_handler(CallbackQueryHandler(button_callback))
-    app.run_polling()
-
-if __name__ == '__main__':
-    main()
+bot.infinity_polling()
