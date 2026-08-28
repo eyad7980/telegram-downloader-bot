@@ -10,7 +10,7 @@ BOT_TOKEN = os.getenv("BOT_TOKEN", "8812016147:AAE3ZN9ALpAlXLgCc398224pqvDcaviAU
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "أهلاً بك يا أبو إياد! 🎥🎵\n"
+        "أهلاً بك! 🎥🎵\n"
         "أرسل لي أي رابط وسأعطيك خيار التحميل كـ فيديو أو صوت."
     )
 
