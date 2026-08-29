@@ -13,7 +13,7 @@ if not os.path.exists(DOWNLOAD_DIR):
 
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
-    bot.reply_to(message, "أهلاً بك! 🎵\nأرسل لي أي رابط وسأقوم بتحميله لك بأعلى جودة وبدون علامة مائية.")
+    bot.reply_to(message, "أهلاً بك! 🔗  أرسل لي أي رابط وسأقوم بتحميله من اجلك")
 
 def expand_url(url):
     try:
@@ -82,7 +82,7 @@ def handle_link(message):
                 bot.send_video(
                     message.chat.id, 
                     video, 
-                    caption="🎬 تم التحميل بنجاح بأعلى جودة بدون علامة مائية"
+                    caption="🎬 تم التحميل بنجاح"
                 )
         else:
             bot.reply_to(message, "❌ تعذر تحميل الفيديو، تأكد أن الرابط صحيح.")
