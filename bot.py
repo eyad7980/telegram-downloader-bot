@@ -24,11 +24,9 @@ def download_video(message):
 
   sent_msg = bot.reply_to(message, '⏳ جاري التحميل، يرجى الانتظار...')
 
-  output_template = 'video_%(id)s.%(ext)s'
-
   ydl_opts = {
       'format': 'best',
-      'outtmpl': output_template,
+      'outtmpl': 'video_%(id)s.%(ext)s',
       'max_filesize': 50 * 1024 * 1024,
   }
 
