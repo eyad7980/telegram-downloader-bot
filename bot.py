@@ -3,8 +3,11 @@ import telebot
 import yt_dlp
 import requests
 
-# التوكن الجديد
-TOKEN = "8812016147:AAGbBbOKozZpYWLjs7zsVQa2WQiESgp5TRQ"
+# قراءة التوكن بأمان من متغيرات البيئة في ريندر
+TOKEN = os.environ.get('BOT_TOKEN')
+if not TOKEN:
+    raise ValueError("❌ خطأ: لم يتم العثور على متغير البيئة BOT_TOKEN")
+
 bot = telebot.TeleBot(TOKEN)
 
 DOWNLOAD_DIR = 'downloads'
@@ -89,10 +92,10 @@ def handle_link(message):
         
         bot.delete_message(message.chat.id, sent_msg.message_id)
 
-    except Exception as e:
+    exceptException as e:
         print(f"Download Error: {str(e)}")
         try:
-            bot.edit_message_text("❌ حدث خطأ أثناء التحميل. يرجى التأكد من الرابط والمحاولة مرة أخرى.", message.chat.id, sent_msg.message_id)
+            bot.edit_message_text("❌ حدث خطأ أثناء التحميل. يرجى التأكد من الرابط ومحاولة إرساله مرة أخرى.", message.chat.id, sent_msg.message_id)
         except:
             bot.reply_to(message, "❌ حدث خطأ غير متوقع أثناء المعالجة.")
 
