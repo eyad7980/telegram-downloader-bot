@@ -10,7 +10,7 @@ bot = telebot.TeleBot(TOKEN)
 def send_welcome(message):
   bot.reply_to(
       message,
-      'أهلاً بك! 👋\nأرسل لي رابط تيك توك وسأقوم بتحميله وإرساله لك فوراً.',
+      'أهلاً بك يا أبو إياد! 👋\nأرسل لي رابط تيك توك وسأقوم بتحميله لك فوراً.',
   )
 
 
@@ -19,28 +19,32 @@ def download_tiktok(message):
   url = message.text.strip()
 
   if 'tiktok.com' not in url:
-    bot.reply_to(message, '⚠️ الرجاء إرسال رابط تيك توك صالح.')
+    bot.reply_to(
+        message, '⚠️ الرجاء إرسال رابط تيك توك صحيح يبدأ بـ http أو https.'
+    )
     return
 
-  sent_msg = bot.reply_to(message, '⏳ جاري تحميل الفيديو، يرجى الانتظار...')
+  sent_msg = bot.reply_to(message, '⏳ جاري تحميل الفيديو من تيك توك...')
 
   try:
-    api_url = f'https://tikwm.com/api/?url={url}&hd=1'
+    # استخدام API مجاني وسريع لجلب معلومات ورابط فيديو تيك توك
+    api_url = f'https://tikwm.com/api/?url={url}'
     response = requests.get(api_url).json()
 
     if response.get('code') == 0:
-      video_data = response.get('data', {})
-      video_url = video_data.get('hdplay') or video_data.get('play')
+      video_data = response['data']
+      video_file_url = video_data['play']  # رابط الفيديو المباشر بدون علامة مائية
 
-      if video_url:
-        bot.delete_message(message.chat.id, sent_msg.message_id)
-        bot.send_video(
-            message.chat.id,
-            video_url,
-            caption='✨ تم التحميل بنجاح',
-        )
-      else:
-        raise Exception('No video URL found')
+      # إرسال الفيديو مباشرة باستخدام رابطه المباشر عبر تليجرام
+      bot.send_video(
+          message.chat.id,
+          video_file_url,
+          caption=(
+              '✅ تم التحميل بنجاح بواسطة بوت أبو إياد'
+              f' 💎\n\n{video_data.get("title", "")}'
+          ),
+      )
+      bot.delete_message(message.chat.id, sent_msg.message_id)
     else:
       raise Exception('API returned error code')
 
@@ -48,14 +52,13 @@ def download_tiktok(message):
     print(f'Error: {e}')
     try:
       bot.edit_message_text(
-          '❌ حدث خطأ أثناء التحميل. تأكد من صحة الرابط أو حاول لاحقاً.',
+          '❌ حدث خطأ أثناء التحميل. تأكد من الرابط وحاول مجدداً.',
           message.chat.id,
           sent_msg.message_id,
       )
     except:
       bot.reply_to(
-          message,
-          '❌ حدث خطأ أثناء التحميل. تأكد من صحة الرابط أو حاول لاحقاً.',
+          message, '❌ حدث خطأ أثناء التحميل. تأكد من الرابط وحاول مجدداً.'
       )
 
 
