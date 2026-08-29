@@ -92,7 +92,7 @@ def handle_link(message):
         
         bot.delete_message(message.chat.id, sent_msg.message_id)
 
-    exceptException as e:
+    except Exception as e: 
         print(f"Download Error: {str(e)}")
         try:
             bot.edit_message_text("❌ حدث خطأ أثناء التحميل. يرجى التأكد من الرابط ومحاولة إرساله مرة أخرى.", message.chat.id, sent_msg.message_id)
