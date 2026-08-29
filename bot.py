@@ -10,7 +10,8 @@ bot = telebot.TeleBot(TOKEN)
 def send_welcome(message):
   bot.reply_to(
       message,
-      'أهلاً بك يا أبو إياد! 👋\nأرسل لي رابط الفيديو وسأقوم بتحميله لك فوراً.',
+      'أهلاً بك يا أبو إياد! 👋\nأرسل لي رابط تيك توك أو يوتيوب وسأقوم بتحميله'
+      ' لك فوراً.',
   )
 
 
@@ -25,26 +26,28 @@ def download_video(message):
   sent_msg = bot.reply_to(message, '⏳ جاري التحميل، يرجى الانتظار...')
 
   ydl_opts = {
-      'format': 'best',
-      'outtmpl': 'video_%(id)s.%(ext)s',
-      'max_filesize': 50 * 1024 * 1024,
+      'format': 'mp4/best',
+      'outtmpl': 'video.mp4',
+      'noplaylist': True,
   }
 
   try:
+    if os.path.exists('video.mp4'):
+      os.remove('video.mp4')
+
     with YoutubeDL(ydl_opts) as ydl:
-      info = ydl.extract_info(url, download=True)
-      filename = ydl.prepare_filename(info)
+      ydl.download([url])
 
-    with open(filename, 'rb') as video_file:
-      bot.send_video(
-          message.chat.id,
-          video_file,
-          supports_streaming=True,
-          caption='✅ تم التحميل بنجاح بواسطة بوت أبو إياد 💎',
-      )
-
-    if os.path.exists(filename):
-      os.remove(filename)
+    if os.path.exists('video.mp4'):
+      with open('video.mp4', 'rb') as video_file:
+        bot.send_video(
+            message.chat.id,
+            video_file,
+            caption='✅ تم التحميل بنجاح بواسطة بوت أبو إياد 💎',
+        )
+      os.remove('video.mp4')
+    else:
+      raise Exception('File not downloaded')
 
     bot.delete_message(message.chat.id, sent_msg.message_id)
 
