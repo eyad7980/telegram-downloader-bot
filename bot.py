@@ -33,10 +33,11 @@ def handle_link(message):
 
     url = expand_url(raw_url)
 
-    # صيغة مبسطة للغاية تتجاوز قيود يوتيوب وباقي المنصات
+    # تم تعديل خيارات التحميل هنا لجلب أفضل جودة وصيغة
     ydl_opts = {
-        'format': 'worst[ext=mp4]/worst/best',
+        'format': 'bestvideo+bestaudio/best',
         'outtmpl': os.path.join(DOWNLOAD_DIR, '%(id)s.%(ext)s'),
+        'merge_output_format': 'mp4',
         'restrictfilenames': True,
         'noplaylist': True,
         'socket_timeout': 30,
