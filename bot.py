@@ -12,16 +12,38 @@ if not os.path.exists(DOWNLOAD_DIR):
 
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
-    bot.reply_to(message, "أهلاً بك! 🎵\nأرسل لي أي رابط وسأقوم بتحميله لك.")
+    bot.reply_to(message, "أهلاً بك! 🎵\nأرسل لي أي رابط وسأقوم بتحميله لك بدون علامة مائية.")
 
 def expand_url(url):
     try:
-        if "vt.tiktok.com" in url or "vm.tiktok.com" in url:
+        if "vt.tiktok.com" in url or "vm.tiktok.com" in url or "tiktok.com" in url:
             response = requests.head(url, allow_redirects=True, timeout=10)
             return response.url
     except Exception:
         pass
     return url
+
+def download_tiktok_without_watermark(url, save_path):
+    try:
+        # استخدام API خارجي مخصص لسحب تيك توك بدون علامة مائية
+        api_url = f"https://tikwm.com/api/?url={url}"
+        headers = {'User-Agent': 'Mozilla/5.0'}
+        res = requests.get(api_url, headers=headers, timeout=15)
+        data = res.json()
+        
+        if data.get('code') == 0:
+            # رابط الفيديو بدون علامة مائية
+            video_url = data['data']['play']
+            vid_res = requests.get(video_url, headers=headers, stream=True, timeout=30)
+            if vid_res.status_code == 200:
+                with open(save_path, 'wb') as f:
+                    for chunk in vid_res.iter_content(chunk_size=1024):
+                        if chunk:
+                            f.write(chunk)
+                return True
+    except Exception as e:
+        print(f"TikTok API Error: {str(e)}")
+    return False
 
 @bot.message_handler(func=lambda message: True)
 def handle_link(message):
@@ -29,37 +51,42 @@ def handle_link(message):
         return
 
     raw_url = message.text.strip()
-    sent_msg = bot.reply_to(message, "⏳ جاري فحص الرابط وتحميل الفيديو...")
+    sent_msg = bot.reply_to(message, "⏳ جاري فحص الرابط وتحميل الفيديو بدون علامة مائية...")
 
     url = expand_url(raw_url)
+    file_path = os.path.join(DOWNLOAD_DIR, f"video_{message.message_id}.mp4")
+    success = False
 
-    # تم تعديل خيارات التحميل هنا لجلب أفضل جودة وصيغة
-    ydl_opts = {
-        'format': 'bestvideo+bestaudio/best',
-        'outtmpl': os.path.join(DOWNLOAD_DIR, '%(id)s.%(ext)s'),
-        'merge_output_format': 'mp4',
-        'restrictfilenames': True,
-        'noplaylist': True,
-        'socket_timeout': 30,
-    }
-
-    file_path = None
     try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=True)
-            file_path = ydl.prepare_filename(info)
+        # فحص إذا كان الرابط يتبع لتيك توك لتوجيهه للطريقة المباشرة النظيفة
+        if "tiktok.com" in url:
+            success = download_tiktok_without_watermark(url, file_path)
 
-            if file_path and os.path.exists(file_path):
-                with open(file_path, 'rb') as video:
-                    bot.send_video(
-                        message.chat.id, 
-                        video, 
-                        caption="🎬 تم التحميل بنجاح"
-                    )
-            else:
-                bot.reply_to(message, "❌ تعذر العثور على ملف الفيديو بعد التحميل.")
-            
-            bot.delete_message(message.chat.id, sent_msg.message_id)
+        # لو لم يكن تيك توك أو فشلت الطريقة، يتم استخدام yt_dlp لباقي المنصات
+        if not success:
+            ydl_opts = {
+                'format': 'best',
+                'outtmpl': file_path,
+                'restrictfilenames': True,
+                'noplaylist': True,
+                'socket_timeout': 30,
+            }
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                ydl.download([url])
+            if os.path.exists(file_path):
+                success = True
+
+        if success and os.path.exists(file_path):
+            with open(file_path, 'rb') as video:
+                bot.send_video(
+                    message.chat.id, 
+                    video, 
+                    caption="🎬 تم التحميل بنجاح بدون علامة مائية"
+                )
+        else:
+            bot.reply_to(message, "❌ تعذر تحميل الفيديو، تأكد أن الرابط صحيح.")
+        
+        bot.delete_message(message.chat.id, sent_msg.message_id)
 
     except Exception as e:
         print(f"Download Error: {str(e)}")
@@ -69,7 +96,7 @@ def handle_link(message):
             bot.reply_to(message, "❌ حدث خطأ غير متوقع أثناء المعالجة.")
 
     finally:
-        if file_path and os.path.exists(file_path):
+        if os.path.exists(file_path):
             try:
                 os.remove(file_path)
             except:
