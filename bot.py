@@ -3,7 +3,6 @@ import telebot
 import yt_dlp
 import requests
 
-# قراءة التوكن بأمان من متغيرات البيئة في ريندر
 TOKEN = os.environ.get('BOT_TOKEN')
 if not TOKEN:
     raise ValueError("❌ خطأ: لم يتم العثور على متغير البيئة BOT_TOKEN")
@@ -92,7 +91,7 @@ def handle_link(message):
         
         bot.delete_message(message.chat.id, sent_msg.message_id)
 
-    except Exception as e: 
+    except Exception as e:
         print(f"Download Error: {str(e)}")
         try:
             bot.edit_message_text("❌ حدث خطأ أثناء التحميل. يرجى التأكد من الرابط ومحاولة إرساله مرة أخرى.", message.chat.id, sent_msg.message_id)
