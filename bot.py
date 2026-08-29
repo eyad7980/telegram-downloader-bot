@@ -1,6 +1,6 @@
 import os
 import telebot
-from yt_dlp import YoutubeDL
+import yt_dlp
 
 TOKEN = os.getenv('BOT_TOKEN')
 bot = telebot.TeleBot(TOKEN)
@@ -35,7 +35,7 @@ def download_video(message):
     if os.path.exists('video.mp4'):
       os.remove('video.mp4')
 
-    with YoutubeDL(ydl_opts) as ydl:
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
       ydl.download([url])
 
     if os.path.exists('video.mp4'):
