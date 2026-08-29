@@ -53,7 +53,7 @@ def handle_link(message):
         return
 
     raw_url = message.text.strip()
-    sent_msg = bot.reply_to(message, "⏳ جاري فحص الرابط وتحميل الفيديو بأعلى جودة...")
+    sent_msg = bot.reply_to(message, "⏳ جاري فحص الرابط وتحميل الفيديو  ...")
 
     url = expand_url(raw_url)
     file_path = os.path.join(DOWNLOAD_DIR, f"video_{message.message_id}.mp4")
@@ -92,7 +92,7 @@ def handle_link(message):
     except Exception as e:
         print(f"Download Error: {str(e)}")
         try:
-            bot.edit_message_text("❌ حدث خطأ أثناء التحميل. يرجى التأكد من الرابط ومحاولة إرساله مرة أخرى.", message.chat.id, sent_msg.message_id)
+            bot.edit_message_text("❌ حدث خطأ أثناء التحميل. يرجى التأكد من الرابط والمحاولة مرة أخرى.", message.chat.id, sent_msg.message_id)
         except:
             bot.reply_to(message, "❌ حدث خطأ غير متوقع أثناء المعالجة.")
 
