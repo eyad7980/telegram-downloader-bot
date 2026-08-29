@@ -12,7 +12,7 @@ if not os.path.exists(DOWNLOAD_DIR):
 
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
-    bot.reply_to(message, "أهلاً بك! 🎵\nأرسل لي أي رابط وسأقوم بتحميله لك بدون علامة مائية.")
+    bot.reply_to(message, "أهلاً بك! 🎵\nأرسل لي أي رابط وسأقوم بتحميله لك بأعلى جودة وبدون علامة مائية.")
 
 def expand_url(url):
     try:
@@ -23,24 +23,26 @@ def expand_url(url):
         pass
     return url
 
-def download_tiktok_without_watermark(url, save_path):
+def download_tiktok_hd_without_watermark(url, save_path):
     try:
-        # استخدام API خارجي مخصص لسحب تيك توك بدون علامة مائية
         api_url = f"https://tikwm.com/api/?url={url}"
         headers = {'User-Agent': 'Mozilla/5.0'}
         res = requests.get(api_url, headers=headers, timeout=15)
         data = res.json()
         
         if data.get('code') == 0:
-            # رابط الفيديو بدون علامة مائية
-            video_url = data['data']['play']
-            vid_res = requests.get(video_url, headers=headers, stream=True, timeout=30)
-            if vid_res.status_code == 200:
-                with open(save_path, 'wb') as f:
-                    for chunk in vid_res.iter_content(chunk_size=1024):
-                        if chunk:
-                            f.write(chunk)
-                return True
+            video_info = data['data']
+            # محاولة جلب رابط الجودة العالية (HD) إن وجد، وإلا فالرابط العادي بدون علامة مائية
+            video_url = video_info.get('hdplay') or video_info.get('play')
+            
+            if video_url:
+                vid_res = requests.get(video_url, headers=headers, stream=True, timeout=30)
+                if vid_res.status_code == 200:
+                    with open(save_path, 'wb') as f:
+                        for chunk in vid_res.iter_content(chunk_size=1024):
+                            if chunk:
+                                f.write(chunk)
+                    return True
     except Exception as e:
         print(f"TikTok API Error: {str(e)}")
     return False
@@ -51,22 +53,21 @@ def handle_link(message):
         return
 
     raw_url = message.text.strip()
-    sent_msg = bot.reply_to(message, "⏳ جاري فحص الرابط وتحميل الفيديو بدون علامة مائية...")
+    sent_msg = bot.reply_to(message, "⏳ جاري فحص الرابط وتحميل الفيديو بأعلى جودة...")
 
     url = expand_url(raw_url)
     file_path = os.path.join(DOWNLOAD_DIR, f"video_{message.message_id}.mp4")
     success = False
 
     try:
-        # فحص إذا كان الرابط يتبع لتيك توك لتوجيهه للطريقة المباشرة النظيفة
         if "tiktok.com" in url:
-            success = download_tiktok_without_watermark(url, file_path)
+            success = download_tiktok_hd_without_watermark(url, file_path)
 
-        # لو لم يكن تيك توك أو فشلت الطريقة، يتم استخدام yt_dlp لباقي المنصات
         if not success:
             ydl_opts = {
-                'format': 'best',
+                'format': 'bestvideo+bestaudio/best',
                 'outtmpl': file_path,
+                'merge_output_format': 'mp4',
                 'restrictfilenames': True,
                 'noplaylist': True,
                 'socket_timeout': 30,
@@ -81,7 +82,7 @@ def handle_link(message):
                 bot.send_video(
                     message.chat.id, 
                     video, 
-                    caption="🎬 تم التحميل بنجاح بدون علامة مائية"
+                    caption="🎬 تم التحميل بنجاح بأعلى جودة بدون علامة مائية"
                 )
         else:
             bot.reply_to(message, "❌ تعذر تحميل الفيديو، تأكد أن الرابط صحيح.")
