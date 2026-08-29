@@ -13,7 +13,7 @@ if not os.path.exists(DOWNLOAD_DIR):
 
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
-    bot.reply_to(message, "أهلاً بك! 🔗  أرسل لي أي رابط وسأقوم بتحميله من اجلك")
+    bot.reply_to(message, "أهلاً بك! أرسل لي أي رابط 🔗 وسأقوم بتحميله من لك")
 
 def expand_url(url):
     try:
